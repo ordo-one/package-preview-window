@@ -16,7 +16,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/ordo-one/package-preview-window", from: "0.0.2"),
+    .package(url: "https://github.com/ordo-one/package-preview-window", from: "0.0.4"),
 ]
 ```
 
