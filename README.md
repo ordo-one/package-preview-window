@@ -4,6 +4,8 @@ A SwiftUI preview wrapper that simulates macOS window chrome. Useful for preview
 
 Renders traffic lights, window border highlights, shadow, and a desktop wallpaper backdrop.
 
+![Fixed size PreviewWindow example](Sources/PreviewWindow/PreviewWindow.docc/Resources/fixed-size.jpg)
+
 **Requires macOS 26+, Swift 6.2+**
 
 This package follows [Semantic Versioning](https://semver.org/). While the major version is `0`, the API is not yet considered stable and may change between minor releases.

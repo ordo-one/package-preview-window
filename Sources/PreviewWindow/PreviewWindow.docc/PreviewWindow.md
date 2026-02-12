@@ -6,6 +6,8 @@ Simulate macOS window chrome in SwiftUI previews.
 
 PreviewWindow wraps your views in a realistic macOS window frame — complete with traffic lights, border highlights, shadow, and a desktop wallpaper backdrop. This is useful for previewing views that rely on window-level styling (`.containerBackground`, `.presentedWindowStyle(.hiddenTitleBar)`, etc.) which don't render in standard Xcode previews.
 
+![A fixed-size PreviewWindow showing a settings panel with traffic lights, material background, and desktop wallpaper.](fixed-size)
+
 ```swift
 #Preview {
     PreviewWindow {
