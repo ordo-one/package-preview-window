@@ -72,6 +72,14 @@ public struct PreviewWindow<Content: View>: View {
         self.backgroundGlass = nil
     }
 
+    /// Creates a preview window chrome wrapper with a Liquid Glass background.
+    /// - Parameters:
+    ///   - windowSize: The size of the simulated window. Defaults to `.contentSize`.
+    ///   - windowStyle: The window style determining corner radius. Defaults to `.titleBar` (16pt).
+    ///   - backgroundGlass: The glass effect to apply as the window background.
+    ///   - showTrafficLights: Whether to show the red/yellow/green traffic light buttons.
+    ///   - wallpaper: Optional custom wallpaper view. Defaults to a macOS-style gradient.
+    ///   - content: The view content to display inside the window.
     public init(windowSize: PreviewWindowSize = .contentSize,
                 windowStyle: PreviewWindowStyle = .titleBar,
                 backgroundGlass: Glass,
