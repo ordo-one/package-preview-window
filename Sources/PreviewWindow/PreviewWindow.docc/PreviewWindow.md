@@ -16,14 +16,17 @@ PreviewWindow wraps your views in a realistic macOS window frame — complete wi
 }
 ```
 
+Configuration is applied through chainable modifiers — use only what you need:
+
 ### Window Size
 
 By default the window fits its content. Use ``PreviewWindowSize/fixed(width:height:)`` for explicit dimensions:
 
 ```swift
-PreviewWindow(windowSize: .fixed(width: 500, height: 350)) {
+PreviewWindow {
     MyView()
 }
+.previewWindowSize(.fixed(width: 500, height: 350))
 ```
 
 ### Window Style
@@ -31,14 +34,13 @@ PreviewWindow(windowSize: .fixed(width: 500, height: 350)) {
 Choose a corner radius preset matching macOS Tahoe window styles:
 
 ```swift
-// TitleBar style — 16pt corner radius (default)
-PreviewWindow(windowStyle: .titleBar) { ... }
-
 // Toolbar style — 26pt corner radius
-PreviewWindow(windowStyle: .toolBar) { ... }
+PreviewWindow { ... }
+    .previewWindowStyle(.toolBar)
 
 // Custom corner radius
-PreviewWindow(windowStyle: .custom(20)) { ... }
+PreviewWindow { ... }
+    .previewWindowStyle(.custom(20))
 ```
 
 ### Background
@@ -47,13 +49,16 @@ Control the window background material or use Liquid Glass:
 
 ```swift
 // Material background (default: .thinMaterial)
-PreviewWindow(windowMaterial: .thickMaterial) { ... }
+PreviewWindow { ... }
+    .previewWindowMaterial(.thickMaterial)
 
 // Glass background
-PreviewWindow(backgroundGlass: .regular) { ... }
+PreviewWindow { ... }
+    .previewBackgroundGlass(.regular)
 
 // No background
-PreviewWindow(windowMaterial: nil) { ... }
+PreviewWindow { ... }
+    .previewWindowMaterial(nil)
 ```
 
 ## Topics

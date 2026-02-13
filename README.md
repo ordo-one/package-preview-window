@@ -34,6 +34,8 @@ import PreviewWindow
 }
 ```
 
+Configuration is applied through chainable modifiers — use only what you need:
+
 ### Window Size
 
 ```swift
@@ -41,42 +43,58 @@ import PreviewWindow
 PreviewWindow { ... }
 
 // Fixed dimensions
-PreviewWindow(windowSize: .fixed(width: 500, height: 350)) { ... }
+PreviewWindow { ... }
+    .previewWindowSize(.fixed(width: 500, height: 350))
 ```
 
 ### Window Style
 
 ```swift
 // TitleBar style — 16pt corner radius (default)
-PreviewWindow(windowStyle: .titleBar) { ... }
+PreviewWindow { ... }
 
 // Toolbar style — 26pt corner radius (Safari-like)
-PreviewWindow(windowStyle: .toolBar) { ... }
+PreviewWindow { ... }
+    .previewWindowStyle(.toolBar)
 
 // Custom corner radius
-PreviewWindow(windowStyle: .custom(20)) { ... }
+PreviewWindow { ... }
+    .previewWindowStyle(.custom(20))
 ```
 
 ### Background
 
 ```swift
 // Material background (default: .thinMaterial)
-PreviewWindow(windowMaterial: .thickMaterial) { ... }
+PreviewWindow { ... }
+    .previewWindowMaterial(.thickMaterial)
 
 // Glass background
-PreviewWindow(backgroundGlass: .regular) { ... }
+PreviewWindow { ... }
+    .previewBackgroundGlass(.regular)
 
 // No background
-PreviewWindow(windowMaterial: nil) { ... }
+PreviewWindow { ... }
+    .previewWindowMaterial(nil)
 ```
 
 ### Other Options
 
 ```swift
-PreviewWindow(
-    showTrafficLights: false,    // Hide the red/yellow/green buttons
-    wallpaper: { MyWallpaper() } // Custom desktop wallpaper
-) {
+// Hide traffic lights
+PreviewWindow { ... }
+    .previewTrafficLights(false)
+
+// Custom desktop wallpaper
+PreviewWindow(wallpaper: { MyWallpaper() }) {
     MyView()
 }
+
+// Combine multiple modifiers
+PreviewWindow {
+    MyView()
+}
+.previewWindowSize(.fixed(width: 500, height: 350))
+.previewWindowStyle(.toolBar)
+.previewBackgroundGlass(.regular)
 ```
