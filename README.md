@@ -4,7 +4,7 @@ A SwiftUI preview wrapper that simulates macOS window chrome. Useful for preview
 
 Renders a title bar, traffic lights, window border highlights, shadow, and a desktop wallpaper backdrop. The simulated window is draggable from the title bar and includes interactive controls for wallpaper, background, window style, and appearance.
 
-![Fixed size PreviewWindow example](Sources/PreviewWindow/PreviewWindow.docc/Resources/fixed-size.jpg)
+<img width="1233" height="831" alt="image" src="https://github.com/user-attachments/assets/e447241b-4762-42b5-9e76-6046714bc1e6" />
 
 **Requires macOS 26+, Swift 6.2+**
 
@@ -16,7 +16,7 @@ Add to your `Package.swift`:
 
 ```swift
 dependencies: [
-    .package(url: "https://github.com/ordo-one/package-preview-window", from: "0.0.4"),
+    .package(url: "https://github.com/ordo-one/package-preview-window", from: "0.1.0"),
 ]
 ```
 
