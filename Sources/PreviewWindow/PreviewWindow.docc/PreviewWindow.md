@@ -4,7 +4,9 @@ Simulate macOS window chrome in SwiftUI previews.
 
 ## Overview
 
-PreviewWindow wraps your views in a realistic macOS window frame — complete with traffic lights, border highlights, shadow, and a desktop wallpaper backdrop. This is useful for previewing views that rely on window-level styling (`.containerBackground`, `.presentedWindowStyle(.hiddenTitleBar)`, etc.) which don't render in standard Xcode previews.
+PreviewWindow wraps your views in a realistic macOS window frame — complete with a title bar, traffic lights, border highlights, shadow, and a desktop wallpaper backdrop. This is useful for previewing views that rely on window-level styling (`.containerBackground`, `.presentedWindowStyle(.hiddenTitleBar)`, etc.) which don't render in standard Xcode previews.
+
+The simulated window is draggable from the title bar and snaps back if moved out of bounds. When using the default wallpaper, interactive pickers for wallpaper style, window style, background, and appearance are overlaid as a glass capsule.
 
 ![A fixed-size PreviewWindow showing a settings panel with traffic lights, material background, and desktop wallpaper.](fixed-size)
 
@@ -31,12 +33,16 @@ PreviewWindow {
 
 ### Window Style
 
-Choose a corner radius preset matching macOS Tahoe window styles:
+Choose a preset matching macOS Tahoe window styles:
 
 ```swift
-// Toolbar style — 26pt corner radius
+// Toolbar style — 26pt corner radius (Safari-like)
 PreviewWindow { ... }
     .previewWindowStyle(.toolBar)
+
+// Hidden title bar — content extends behind transparent title bar
+PreviewWindow { ... }
+    .previewWindowStyle(.hiddenTitleBar)
 
 // Custom corner radius
 PreviewWindow { ... }
@@ -45,20 +51,32 @@ PreviewWindow { ... }
 
 ### Background
 
-Control the window background material or use Liquid Glass:
+Control the window background with the unified `.previewWindowBackground(_:)` modifier:
 
 ```swift
-// Material background (default: .thinMaterial)
+// System default (opaque)
 PreviewWindow { ... }
-    .previewWindowMaterial(.thickMaterial)
+    .previewWindowBackground(.defaultStyle)
+
+// Material background
+PreviewWindow { ... }
+    .previewWindowBackground(.material(.thickMaterial))
 
 // Glass background
 PreviewWindow { ... }
-    .previewBackgroundGlass(.regular)
+    .previewWindowBackground(.glass(.regular))
 
-// No background
+// Clear (no background)
 PreviewWindow { ... }
-    .previewWindowMaterial(nil)
+    .previewWindowBackground(.material(nil))
+```
+
+### Title and Wallpaper
+
+```swift
+PreviewWindow { ... }
+    .previewWindowTitle("My App")
+    .previewWallpaper(.sunset, appearance: .dark)
 ```
 
 ## Topics
@@ -68,3 +86,4 @@ PreviewWindow { ... }
 - ``PreviewWindow``
 - ``PreviewWindowSize``
 - ``PreviewWindowStyle``
+- ``PreviewWallpaper``

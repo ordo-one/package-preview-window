@@ -120,6 +120,8 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     @State private var backgroundOption: BackgroundOption = .defaultStyle
     @State private var wallpaperStyle: PreviewWallpaper.Style = .ocean
     @State private var wallpaperAppearance: ColorScheme?
+    @State private var windowPosition: CGSize = .zero
+    @State private var dragStartPosition: CGSize?
 
     private var windowStyle: PreviewWindowStyle {
         switch windowStyleOption {
@@ -227,6 +229,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     public var body: some View {
         // Simulated window
         windowContent
+            .fixedSize()
             .containerShape(windowShape)
             .clipShape(windowShape)
         // Inner white border (highlight)
@@ -241,6 +244,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
                     .padding(-0.5)
             }
             .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+            .offset(x: windowPosition.width, y: windowPosition.height)
             .padding(wallpaperPadding)
             .overlay(alignment: .bottom) {
                 if Wallpaper.self == EmptyView.self {
@@ -315,19 +319,47 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
 
             if showsTitleBar {
                 titleBar
+                    .gesture(windowDragGesture)
                     .layoutPriority(1)
-
-            } else if showTrafficLights {
-                TrafficLights()
-                    .padding(.leading, 13)
-                    .frame(maxWidth: .infinity, alignment: .leading)
+            } else {
+                // Hidden title bar: transparent drag handle in safe area
+                Color.clear
+                    .frame(maxWidth: .infinity)
                     .frame(height: windowStyle.safeAreaInsets.top)
+                    .contentShape(.rect)
+                    .overlay(alignment: .leading) {
+                        if showTrafficLights {
+                            TrafficLights()
+                                .padding(.leading, 13)
+                        }
+                    }
+                    .gesture(windowDragGesture)
             }
         }
         .windowFrame(windowSize)
     }
 
     private var showsTitleBar: Bool { windowStyleOption != .hiddenTitleBar }
+
+    private var windowDragGesture: some Gesture {
+        DragGesture(coordinateSpace: .global)
+            .onChanged { value in
+                if dragStartPosition == nil { dragStartPosition = windowPosition }
+                windowPosition = CGSize(
+                    width: dragStartPosition!.width + value.translation.width,
+                    height: dragStartPosition!.height + value.translation.height
+                )
+            }
+            .onEnded { _ in
+                dragStartPosition = nil
+                let clamped = clampedPosition(windowPosition)
+                if windowPosition != clamped {
+                    withAnimation(.spring(duration: 0.3)) {
+                        windowPosition = clamped
+                    }
+                }
+            }
+    }
 
     private var titleBar: some View {
         HStack(spacing: 8) {
@@ -368,6 +400,14 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         } else {
             wallpaper
         }
+    }
+
+    private func clampedPosition(_ position: CGSize) -> CGSize {
+        let bound = wallpaperPadding - windowStyle.safeAreaInsets.top
+        return CGSize(
+            width: min(max(position.width, -bound), bound),
+            height: min(max(position.height, -bound), bound)
+        )
     }
 }
 

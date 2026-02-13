@@ -2,7 +2,7 @@
 
 A SwiftUI preview wrapper that simulates macOS window chrome. Useful for previewing views that rely on window-level styling (`.containerBackground`, `.presentedWindowStyle(.hiddenTitleBar)`, etc.) which don't render in standard Xcode previews.
 
-Renders traffic lights, window border highlights, shadow, and a desktop wallpaper backdrop.
+Renders a title bar, traffic lights, window border highlights, shadow, and a desktop wallpaper backdrop. The simulated window is draggable from the title bar and includes interactive controls for wallpaper, background, window style, and appearance.
 
 ![Fixed size PreviewWindow example](Sources/PreviewWindow/PreviewWindow.docc/Resources/fixed-size.jpg)
 
@@ -57,6 +57,10 @@ PreviewWindow { ... }
 PreviewWindow { ... }
     .previewWindowStyle(.toolBar)
 
+// Hidden title bar — content extends behind transparent title bar
+PreviewWindow { ... }
+    .previewWindowStyle(.hiddenTitleBar)
+
 // Custom corner radius
 PreviewWindow { ... }
     .previewWindowStyle(.custom(20))
@@ -65,25 +69,37 @@ PreviewWindow { ... }
 ### Background
 
 ```swift
-// Material background (default: .thinMaterial)
+// System default (opaque)
 PreviewWindow { ... }
-    .previewWindowMaterial(.thickMaterial)
+    .previewWindowBackground(.defaultStyle)
+
+// Material background
+PreviewWindow { ... }
+    .previewWindowBackground(.material(.thickMaterial))
 
 // Glass background
 PreviewWindow { ... }
-    .previewBackgroundGlass(.regular)
+    .previewWindowBackground(.glass(.regular))
 
-// No background
+// Clear (no background)
 PreviewWindow { ... }
-    .previewWindowMaterial(nil)
+    .previewWindowBackground(.material(nil))
 ```
 
 ### Other Options
 
 ```swift
+// Window title
+PreviewWindow { ... }
+    .previewWindowTitle("My App")
+
 // Hide traffic lights
 PreviewWindow { ... }
     .previewTrafficLights(false)
+
+// Wallpaper style and appearance
+PreviewWindow { ... }
+    .previewWallpaper(.sunset, appearance: .dark)
 
 // Custom desktop wallpaper
 PreviewWindow(wallpaper: { MyWallpaper() }) {
@@ -96,5 +112,7 @@ PreviewWindow {
 }
 .previewWindowSize(.fixed(width: 500, height: 350))
 .previewWindowStyle(.toolBar)
-.previewBackgroundGlass(.regular)
+.previewWindowTitle("Settings")
+.previewWindowBackground(.glass(.regular))
+.previewWallpaper(.ocean, appearance: .dark)
 ```
