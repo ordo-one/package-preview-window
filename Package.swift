@@ -15,10 +15,7 @@ let package = Package(
     ],
     targets: [
         .target(
-            name: "PreviewWindow",
-            resources: [
-                .process("Resources"),
-            ]
+            name: "PreviewWindow"
         ),
     ]
 )

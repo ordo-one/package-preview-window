@@ -39,20 +39,16 @@ public enum PreviewWindowStyle {
 
     @MainActor private static let titleBarInsets: EdgeInsets = {
         let frame = NSRect(x: 0, y: 0, width: 480, height: 300)
-        let contentRect = NSWindow.contentRect(
-            forFrameRect: frame,
-            styleMask: [.titled, .closable, .miniaturizable, .resizable]
-        )
+        let contentRect = NSWindow.contentRect(forFrameRect: frame,
+                                               styleMask: [.titled, .closable, .miniaturizable, .resizable])
         return EdgeInsets(top: frame.height - contentRect.height, leading: 0, bottom: 0, trailing: 0)
     }()
 
     @MainActor private static let hiddenTitleBarInsets: EdgeInsets = {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-            backing: .buffered,
-            defer: true
-        )
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
+                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+                              backing: .buffered,
+                              defer: true)
         window.titleVisibility = .hidden
         window.titlebarAppearsTransparent = true
         let topInset = window.frame.height - window.contentLayoutRect.height
@@ -60,12 +56,10 @@ public enum PreviewWindowStyle {
     }()
 
     @MainActor private static let toolBarInsets: EdgeInsets = {
-        let window = NSWindow(
-            contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
-            styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-            backing: .buffered,
-            defer: true
-        )
+        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
+                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
+                              backing: .buffered,
+                              defer: true)
         let toolbar = NSToolbar(identifier: "PreviewWindow.measure")
         toolbar.displayMode = .iconOnly
         window.toolbar = toolbar
@@ -80,6 +74,9 @@ public enum PreviewWindowStyle {
 /// Use this to preview views that rely on window styling like `.containerBackground(.thinMaterial, for: .window)`
 /// or `.presentedWindowStyle(.hiddenTitleBar)` which don't render in standard SwiftUI previews.
 ///
+/// When using the default wallpaper, interactive pickers for wallpaper style and
+/// appearance are shown below the preview.
+///
 /// Example:
 /// ```swift
 /// #Preview {
@@ -88,6 +85,7 @@ public enum PreviewWindowStyle {
 ///     }
 ///     .previewWindowStyle(.toolBar)
 ///     .previewBackgroundGlass(.regular)
+///     .previewWallpaper(.sunset, appearance: .dark)
 /// }
 /// ```
 public struct PreviewWindow<Content: View, Wallpaper: View>: View {
@@ -98,6 +96,8 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     var windowMaterial: Material? = .thinMaterial
     var showTrafficLights: Bool = true
     var backgroundGlass: Glass?
+    @State var wallpaperStyle: PreviewWallpaper.Style = .ocean
+    @State var wallpaperAppearance: ColorScheme?
 
     /// Creates a preview window chrome wrapper.
     public init(@ViewBuilder content: () -> Content) where Wallpaper == EmptyView {
@@ -151,38 +151,74 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         return copy
     }
 
-    private let wallpaperPadding: CGFloat = 50
-
-    public var body: some View {
-        // Simulated window
-        windowContent
-            .containerShape(windowShape)
-            .clipShape(windowShape)
-        // Inner white border (highlight)
-            .overlay {
-                windowShape
-                    .strokeBorder(Color.white.opacity(0.5), lineWidth: 0.5)
-            }
-        // Outer black border (definition)
-            .overlay {
-                windowShape
-                    .strokeBorder(Color.black.opacity(0.2), lineWidth: 0.5)
-                    .padding(-0.5)
-            }
-            .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
-            .padding(wallpaperPadding)
-            .background {
-                if Wallpaper.self == EmptyView.self {
-                    defaultWallpaper
-                } else {
-                    wallpaper
-                }
-            }
-            .clipped()
-
+    /// Sets the default wallpaper style and optionally locks it to a specific appearance.
+    public func previewWallpaper(_ style: PreviewWallpaper.Style, appearance: ColorScheme? = nil) -> Self {
+        var copy = self
+        copy._wallpaperStyle = State(initialValue: style)
+        copy._wallpaperAppearance = State(initialValue: appearance)
+        return copy
     }
 
-    @ViewBuilder
+    private let wallpaperPadding: CGFloat = 120
+
+    public var body: some View {
+        VStack(spacing: 0) {
+            // Simulated window
+            windowContent
+                .containerShape(windowShape)
+                .clipShape(windowShape)
+                // Inner white border (highlight)
+                .overlay {
+                    windowShape
+                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
+                }
+                // Outer black border (definition)
+                .overlay {
+                    windowShape
+                        .strokeBorder(Color.black.opacity(0.2), lineWidth: 0.5)
+                        .padding(-0.5)
+                }
+                .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+                .padding(wallpaperPadding)
+                .background {
+                    if Wallpaper.self == EmptyView.self {
+                        defaultWallpaper
+                    } else {
+                        wallpaper
+                    }
+                }
+                .clipped()
+
+            if Wallpaper.self == EmptyView.self {
+                wallpaperControls
+                    .padding()
+            }
+        }
+    }
+
+    private var wallpaperControls: some View {
+        HStack(alignment: .center, spacing: 16) {
+            Picker("Wallpaper", selection: $wallpaperStyle) {
+                Text("Ocean").tag(PreviewWallpaper.Style.ocean)
+                Text("Sunset").tag(PreviewWallpaper.Style.sunset)
+                Text("Meadow").tag(PreviewWallpaper.Style.meadow)
+                Text("Solid").tag(PreviewWallpaper.Style.solid)
+                Text("Contrast").tag(PreviewWallpaper.Style.highContrast)
+            }
+
+            Picker("Appearance", selection: $wallpaperAppearance) {
+                Text("Auto").tag(ColorScheme?.none)
+                Text("Light").tag(ColorScheme?.some(.light))
+                Text("Dark").tag(ColorScheme?.some(.dark))
+            }
+        }
+        .tint(.clear)
+        .controlSize(.mini)
+        .pickerStyle(.menu)
+        .font(.caption)
+        .foregroundStyle(.secondary)
+    }
+
     private var windowContent: some View {
         ZStack(alignment: .topLeading) {
             framedContent
@@ -213,10 +249,14 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         RoundedRectangle(cornerRadius: windowStyle.cornerRadius, style: .continuous)
     }
 
+    @ViewBuilder
     private var defaultWallpaper: some View {
-        Image("PreviewWallpaper", bundle: .module)
-            .resizable()
-            .aspectRatio(contentMode: .fill)
+        let wallpaper = PreviewWallpaper(wallpaperStyle)
+        if let wallpaperAppearance {
+            wallpaper.appearance(wallpaperAppearance)
+        } else {
+            wallpaper
+        }
     }
 }
 
@@ -380,12 +420,11 @@ private struct TrafficLights: View {
 #Preview("Content with safeAreaInset bar") {
     PreviewWindow {
         List {
-            ForEach(1...10, id: \.self) { i in
+            ForEach(1 ... 10, id: \.self) { i in
                 Text("Item \(i)")
             }
         }
         .scrollContentBackground(.hidden)
-        .background(.thickMaterial)
         .safeAreaInset(edge: .top) {
             HStack {
                 Text("All Mail")
@@ -410,7 +449,6 @@ private struct TrafficLights: View {
     }
     .previewWindowSize(.fixed(width: 500, height: 350))
     .previewWindowStyle(.hiddenTitleBar)
-    .previewWindowMaterial(.ultraThin)
 }
 
 // MARK: Safe Area Diagnostics
