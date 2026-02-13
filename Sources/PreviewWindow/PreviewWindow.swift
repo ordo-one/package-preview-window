@@ -84,18 +84,28 @@ public enum PreviewWindowStyle {
 ///         MyTransparentView()
 ///     }
 ///     .previewWindowStyle(.toolBar)
-///     .previewBackgroundGlass(.regular)
+///     .previewWindowBackground(.glass(.regular))
 ///     .previewWallpaper(.sunset, appearance: .dark)
 /// }
 /// ```
 public struct PreviewWindow<Content: View, Wallpaper: View>: View {
+
+    /// The background style applied to the simulated window content area.
+    public enum BackgroundStyle {
+        /// System default background.
+        case defaultStyle
+        /// A material blur background. Pass `nil` for a clear background.
+        case material(Material?)
+        /// A Liquid Glass background.
+        case glass(Glass)
+    }
+
     let content: Content
     let wallpaper: Wallpaper
     var windowSize: PreviewWindowSize = .contentSize
     var windowStyle: PreviewWindowStyle = .titleBar
-    var windowMaterial: Material? = .thinMaterial
     var showTrafficLights: Bool = true
-    var backgroundGlass: Glass?
+    var backgroundStyle: BackgroundStyle = .defaultStyle
     @State var wallpaperStyle: PreviewWallpaper.Style = .ocean
     @State var wallpaperAppearance: ColorScheme?
 
@@ -128,19 +138,10 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         return copy
     }
 
-    /// Sets the window background material. Pass `nil` for no background.
-    public func previewWindowMaterial(_ material: Material?) -> Self {
+    /// Sets the window background style (material, glass, or default system background).
+    public func previewWindowBackground(_ style: BackgroundStyle) -> Self {
         var copy = self
-        copy.windowMaterial = material
-        copy.backgroundGlass = nil
-        return copy
-    }
-
-    /// Sets a Liquid Glass background. Replaces any material background.
-    public func previewBackgroundGlass(_ glass: Glass) -> Self {
-        var copy = self
-        copy.backgroundGlass = glass
-        copy.windowMaterial = nil
+        copy.backgroundStyle = style
         return copy
     }
 
@@ -162,38 +163,40 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     private let wallpaperPadding: CGFloat = 120
 
     public var body: some View {
-        VStack(spacing: 0) {
-            // Simulated window
-            windowContent
-                .containerShape(windowShape)
-                .clipShape(windowShape)
-                // Inner white border (highlight)
-                .overlay {
-                    windowShape
-                        .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
-                }
-                // Outer black border (definition)
-                .overlay {
-                    windowShape
-                        .strokeBorder(Color.black.opacity(0.2), lineWidth: 0.5)
-                        .padding(-0.5)
-                }
-                .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
-                .padding(wallpaperPadding)
-                .background {
-                    if Wallpaper.self == EmptyView.self {
-                        defaultWallpaper
-                    } else {
-                        wallpaper
-                    }
-                }
-                .clipped()
-
-            if Wallpaper.self == EmptyView.self {
-                wallpaperControls
-                    .padding()
+        // Simulated window
+        windowContent
+            .containerShape(windowShape)
+            .clipShape(windowShape)
+        // Inner white border (highlight)
+            .overlay {
+                windowShape
+                    .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
             }
-        }
+        // Outer black border (definition)
+            .overlay {
+                windowShape
+                    .strokeBorder(Color.black.opacity(0.2), lineWidth: 0.5)
+                    .padding(-0.5)
+            }
+            .shadow(color: .black.opacity(0.3), radius: 20, y: 10)
+            .padding(wallpaperPadding)
+            .overlay(alignment: .bottom) {
+                if Wallpaper.self == EmptyView.self {
+                    wallpaperControls
+                        .padding(.horizontal, 12)
+                        .padding(.vertical, 8)
+                        .glassEffect(.regular, in: .capsule)
+                        .padding(.bottom, 40)
+                }
+            }
+            .background {
+                if Wallpaper.self == EmptyView.self {
+                    defaultWallpaper
+                } else {
+                    wallpaper
+                }
+            }
+            .clipped()
     }
 
     private var wallpaperControls: some View {
@@ -223,7 +226,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         ZStack(alignment: .topLeading) {
             framedContent
                 .safeAreaPadding(windowStyle.safeAreaInsets)
-                .windowBackground(material: windowMaterial, glass: backgroundGlass)
+                .windowBackground(style: backgroundStyle)
 
             if showTrafficLights {
                 TrafficLights()
@@ -275,13 +278,18 @@ private struct WindowFrameModifier: ViewModifier {
 
 private extension View {
     @ViewBuilder
-    func windowBackground(material: Material?, glass: Glass?) -> some View {
-        if let material {
-            self.background(material)
-        } else if let glass {
+    func windowBackground<Content: View, Wallpaper: View>(style: PreviewWindow<Content, Wallpaper>.BackgroundStyle) -> some View {
+        switch style {
+        case .defaultStyle:
+            self.background()
+        case .material(let material):
+            if let material {
+                self.background(material)
+            } else {
+                self.background(.clear)
+            }
+        case .glass(let glass):
             self.glassEffect(glass, in: .containerRelative)
-        } else {
-            self
         }
     }
 }
@@ -322,15 +330,18 @@ private struct TrafficLights: View {
 
             HStack(spacing: 12) {
                 Button("Cancel") {}
-                    .buttonStyle(.glass)
-                Button("Delete") {}
+                    .buttonBorderShape(.capsule)
+                    .buttonStyle(.glass(.clear))
+                Button("Delete", role: .destructive) {}
+                    .buttonBorderShape(.capsule)
                     .buttonStyle(.glassProminent)
                     .tint(.red)
             }
         }
         .padding(20)
     }
-    .previewWindowMaterial(nil)
+    .previewWindowStyle(.hiddenTitleBar)
+    .previewWindowBackground(.material(.regular))
 }
 
 #Preview("TitleBar Style - Glass") {
@@ -346,7 +357,7 @@ private struct TrafficLights: View {
         .padding(16)
         .frame(width: 280)
     }
-    .previewBackgroundGlass(.regular)
+    .previewWindowBackground(.glass(.regular))
 }
 
 #Preview("Toolbar Style (26pt)") {
