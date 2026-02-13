@@ -20,8 +20,8 @@ public struct PreviewWallpaper: View {
         case highContrast
     }
 
-    let style: Style
-    var appearanceOverride: ColorScheme?
+    private let style: Style
+    private var appearanceOverride: ColorScheme?
     @Environment(\.colorScheme) private var environmentColorScheme
 
     /// Creates a wallpaper with the given style.

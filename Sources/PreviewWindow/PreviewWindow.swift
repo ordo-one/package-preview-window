@@ -2,7 +2,7 @@ import AppKit
 import SwiftUI
 
 /// Window size options for PreviewWindow.
-public enum PreviewWindowSize {
+public enum PreviewWindowSize: Sendable {
     /// Fixed window size with specific dimensions.
     case fixed(width: CGFloat, height: CGFloat)
     /// Window size to fit its content.
@@ -10,7 +10,7 @@ public enum PreviewWindowSize {
 }
 
 /// Window style presets based on macOS Tahoe design specifications.
-public enum PreviewWindowStyle {
+public enum PreviewWindowStyle: Sendable {
     /// TitleBar-style window with 16pt corner radius.
     case titleBar
     /// Hidden title bar window with 16pt corner radius. Content extends behind the transparent title bar.
@@ -111,12 +111,12 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         case titleBar, hiddenTitleBar, toolBar
     }
 
-    let content: Content
-    let wallpaper: Wallpaper
-    var windowSize: PreviewWindowSize = .contentSize
+    private let content: Content
+    private let wallpaper: Wallpaper
+    private var windowSize: PreviewWindowSize = .contentSize
     @State private var windowStyleOption: WindowStyleOption = .titleBar
-    var showTrafficLights: Bool = true
-    var windowTitle: String = "Preview Window"
+    private var showTrafficLights: Bool = true
+    private var windowTitle: String = "Preview Window"
     @State private var backgroundOption: BackgroundOption = .defaultStyle
     @State private var wallpaperStyle: PreviewWallpaper.Style = .ocean
     @State private var wallpaperAppearance: ColorScheme?
@@ -195,7 +195,8 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         switch style {
         case .defaultStyle: option = .defaultStyle
         case .material(.none): option = .clear
-        case .material(.some): option = .regularMaterial
+        // Material/Glass aren't Equatable, so specific variants can't be matched.
+        case .material: option = .regularMaterial
         case .glass: option = .glassRegular
         }
         copy._backgroundOption = State(initialValue: option)
@@ -419,7 +420,6 @@ private extension View {
         case .contentSize: self
         }
     }
-
 
     @ViewBuilder
     func windowBackground<Content: View, Wallpaper: View>(style: PreviewWindow<Content, Wallpaper>.BackgroundStyle) -> some View {
