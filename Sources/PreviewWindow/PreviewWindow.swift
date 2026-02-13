@@ -74,8 +74,8 @@ public enum PreviewWindowStyle {
 /// Use this to preview views that rely on window styling like `.containerBackground(.thinMaterial, for: .window)`
 /// or `.presentedWindowStyle(.hiddenTitleBar)` which don't render in standard SwiftUI previews.
 ///
-/// When using the default wallpaper, interactive pickers for wallpaper style and
-/// appearance are shown below the preview.
+/// When using the default wallpaper, interactive pickers for wallpaper style,
+/// window style, background, and appearance are overlaid as a glass capsule.
 ///
 /// Example:
 /// ```swift
@@ -84,6 +84,7 @@ public enum PreviewWindowStyle {
 ///         MyTransparentView()
 ///     }
 ///     .previewWindowStyle(.toolBar)
+///     .previewWindowTitle("My App")
 ///     .previewWindowBackground(.glass(.regular))
 ///     .previewWallpaper(.sunset, appearance: .dark)
 /// }
@@ -100,14 +101,48 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         case glass(Glass)
     }
 
+    private enum BackgroundOption: Hashable {
+        case defaultStyle, clear
+        case ultraThinMaterial, thinMaterial, regularMaterial, thickMaterial, ultraThickMaterial, barMaterial
+        case glassClear, glassRegular
+    }
+
+    private enum WindowStyleOption: Hashable {
+        case titleBar, hiddenTitleBar, toolBar
+    }
+
     let content: Content
     let wallpaper: Wallpaper
     var windowSize: PreviewWindowSize = .contentSize
-    var windowStyle: PreviewWindowStyle = .titleBar
+    @State private var windowStyleOption: WindowStyleOption = .titleBar
     var showTrafficLights: Bool = true
-    var backgroundStyle: BackgroundStyle = .defaultStyle
-    @State var wallpaperStyle: PreviewWallpaper.Style = .ocean
-    @State var wallpaperAppearance: ColorScheme?
+    var windowTitle: String = "Preview Window"
+    @State private var backgroundOption: BackgroundOption = .defaultStyle
+    @State private var wallpaperStyle: PreviewWallpaper.Style = .ocean
+    @State private var wallpaperAppearance: ColorScheme?
+
+    private var windowStyle: PreviewWindowStyle {
+        switch windowStyleOption {
+        case .titleBar: .titleBar
+        case .hiddenTitleBar: .hiddenTitleBar
+        case .toolBar: .toolBar
+        }
+    }
+
+    private var backgroundStyle: BackgroundStyle {
+        switch backgroundOption {
+        case .defaultStyle: .defaultStyle
+        case .clear: .material(nil)
+        case .ultraThinMaterial: .material(.ultraThinMaterial)
+        case .thinMaterial: .material(.thinMaterial)
+        case .regularMaterial: .material(.regularMaterial)
+        case .thickMaterial: .material(.thickMaterial)
+        case .ultraThickMaterial: .material(.ultraThickMaterial)
+        case .barMaterial: .material(.bar)
+        case .glassClear: .glass(.clear)
+        case .glassRegular: .glass(.regular)
+        }
+    }
 
     /// Creates a preview window chrome wrapper.
     public init(@ViewBuilder content: () -> Content) where Wallpaper == EmptyView {
@@ -131,17 +166,37 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         return copy
     }
 
-    /// Sets the window style.
+    /// Sets the initial window style.
+    ///
+    /// When using the default wallpaper, the window style can be changed
+    /// interactively through the control bar overlay.
     public func previewWindowStyle(_ style: PreviewWindowStyle) -> Self {
         var copy = self
-        copy.windowStyle = style
+        let option: WindowStyleOption
+        switch style {
+        case .titleBar: option = .titleBar
+        case .hiddenTitleBar: option = .hiddenTitleBar
+        case .toolBar: option = .toolBar
+        case .custom: option = .titleBar
+        }
+        copy._windowStyleOption = State(initialValue: option)
         return copy
     }
 
-    /// Sets the window background style (material, glass, or default system background).
+    /// Sets the initial window background style (material, glass, or default system background).
+    ///
+    /// When using the default wallpaper, the background style can be changed
+    /// interactively through the control bar overlay.
     public func previewWindowBackground(_ style: BackgroundStyle) -> Self {
         var copy = self
-        copy.backgroundStyle = style
+        let option: BackgroundOption
+        switch style {
+        case .defaultStyle: option = .defaultStyle
+        case .material(.none): option = .clear
+        case .material(.some): option = .regularMaterial
+        case .glass: option = .glassRegular
+        }
+        copy._backgroundOption = State(initialValue: option)
         return copy
     }
 
@@ -149,6 +204,13 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     public func previewTrafficLights(_ visible: Bool) -> Self {
         var copy = self
         copy.showTrafficLights = visible
+        return copy
+    }
+
+    /// Sets the window title displayed in the title bar.
+    public func previewWindowTitle(_ title: String) -> Self {
+        var copy = self
+        copy.windowTitle = title
         return copy
     }
 
@@ -160,7 +222,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         return copy
     }
 
-    private let wallpaperPadding: CGFloat = 120
+    private let wallpaperPadding: CGFloat = 200
 
     public var body: some View {
         // Simulated window
@@ -201,7 +263,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
 
     private var wallpaperControls: some View {
         HStack(alignment: .center, spacing: 16) {
-            Picker("Wallpaper", selection: $wallpaperStyle) {
+            Picker("Wallpaper", systemImage: "photo.fill", selection: $wallpaperStyle) {
                 Text("Ocean").tag(PreviewWallpaper.Style.ocean)
                 Text("Sunset").tag(PreviewWallpaper.Style.sunset)
                 Text("Meadow").tag(PreviewWallpaper.Style.meadow)
@@ -209,7 +271,28 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
                 Text("Contrast").tag(PreviewWallpaper.Style.highContrast)
             }
 
-            Picker("Appearance", selection: $wallpaperAppearance) {
+            Picker("Background", systemImage: "rectangle.on.rectangle", selection: $backgroundOption) {
+                Text("Default").tag(BackgroundOption.defaultStyle)
+                Text("Clear").tag(BackgroundOption.clear)
+                Divider()
+                Text("Ultra Thin").tag(BackgroundOption.ultraThinMaterial)
+                Text("Thin").tag(BackgroundOption.thinMaterial)
+                Text("Regular").tag(BackgroundOption.regularMaterial)
+                Text("Thick").tag(BackgroundOption.thickMaterial)
+                Text("Ultra Thick").tag(BackgroundOption.ultraThickMaterial)
+                Text("Bar").tag(BackgroundOption.barMaterial)
+                Divider()
+                Text("Glass Clear").tag(BackgroundOption.glassClear)
+                Text("Glass Regular").tag(BackgroundOption.glassRegular)
+            }
+
+            Picker("Window Style", systemImage: "macwindow", selection: $windowStyleOption) {
+                Text("Title Bar").tag(WindowStyleOption.titleBar)
+                Text("Hidden Title Bar").tag(WindowStyleOption.hiddenTitleBar)
+                Text("Toolbar").tag(WindowStyleOption.toolBar)
+            }
+
+            Picker("Appearance", systemImage: "circle.lefthalf.filled", selection: $wallpaperAppearance) {
                 Text("Auto").tag(ColorScheme?.none)
                 Text("Light").tag(ColorScheme?.some(.light))
                 Text("Dark").tag(ColorScheme?.some(.dark))
@@ -220,21 +303,46 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         .pickerStyle(.menu)
         .font(.caption)
         .foregroundStyle(.secondary)
+        .labelStyle(.iconOnly)
     }
 
     private var windowContent: some View {
-        ZStack(alignment: .topLeading) {
+        ZStack(alignment: .top) {
             framedContent
                 .safeAreaPadding(windowStyle.safeAreaInsets)
                 .windowBackground(style: backgroundStyle)
+                .layoutPriority(2)
 
-            if showTrafficLights {
+            if showsTitleBar {
+                titleBar
+                    .layoutPriority(1)
+
+            } else if showTrafficLights {
                 TrafficLights()
                     .padding(.leading, 13)
-                    .padding(.top, 13)
+                    .frame(maxWidth: .infinity, alignment: .leading)
+                    .frame(height: windowStyle.safeAreaInsets.top)
             }
         }
-        .modifier(WindowFrameModifier(windowSize: windowSize))
+        .windowFrame(windowSize)
+    }
+
+    private var showsTitleBar: Bool { windowStyleOption != .hiddenTitleBar }
+
+    private var titleBar: some View {
+        HStack(spacing: 8) {
+            if showTrafficLights {
+                TrafficLights()
+            }
+            Text(windowTitle)
+                .font(.system(size: 13, weight: .semibold))
+                .lineLimit(1)
+                .foregroundStyle(.secondary)
+            Spacer()
+        }
+        .padding(.horizontal, 13)
+        .frame(height: windowStyle.safeAreaInsets.top)
+        .background(.bar, in: ConcentricRectangle(corners: .concentric))
     }
 
     @ViewBuilder
@@ -263,20 +371,16 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     }
 }
 
-private struct WindowFrameModifier: ViewModifier {
-    let windowSize: PreviewWindowSize
-
-    func body(content: Content) -> some View {
-        switch windowSize {
-        case .fixed(let width, let height):
-            content.frame(width: width, height: height)
-        case .contentSize:
-            content
+private extension View {
+    @ViewBuilder
+    func windowFrame(_ size: PreviewWindowSize) -> some View {
+        switch size {
+        case .fixed(let width, let height): self.frame(width: width, height: height)
+        case .contentSize: self
         }
     }
-}
 
-private extension View {
+
     @ViewBuilder
     func windowBackground<Content: View, Wallpaper: View>(style: PreviewWindow<Content, Wallpaper>.BackgroundStyle) -> some View {
         switch style {
@@ -464,9 +568,11 @@ private struct TrafficLights: View {
 
 // MARK: Safe Area Diagnostics
 
-#Preview("Safe Area Diagnostic - TitleBar") {
-    let insets = PreviewWindowStyle.titleBar.safeAreaInsets
-    PreviewWindow {
+private struct SafeAreaDiagnostic: View {
+    let label: String
+    let insets: EdgeInsets
+
+    var body: some View {
         GeometryReader { geometry in
             ZStack(alignment: .topLeading) {
                 Color.red.opacity(0.25)
@@ -477,7 +583,7 @@ private struct TrafficLights: View {
                     .padding(.top, insets.top)
 
                 VStack(alignment: .leading, spacing: 4) {
-                    Text("titleBar")
+                    Text(label)
                     Text("Probed: \(insets.top, specifier: "%.1f")pt")
                     Text("Geometry: \(geometry.safeAreaInsets.top, specifier: "%.1f")pt")
                 }
@@ -488,63 +594,23 @@ private struct TrafficLights: View {
         }
         .ignoresSafeArea()
     }
-    .previewWindowSize(.fixed(width: 500, height: 300))
+}
+
+#Preview("Safe Area Diagnostic - TitleBar") {
+    PreviewWindow { SafeAreaDiagnostic(label: "titleBar", insets: PreviewWindowStyle.titleBar.safeAreaInsets) }
+        .previewWindowSize(.fixed(width: 500, height: 300))
 }
 
 #Preview("Safe Area Diagnostic - HiddenTitleBar") {
-    let insets = PreviewWindowStyle.hiddenTitleBar.safeAreaInsets
-    PreviewWindow {
-        GeometryReader { geometry in
-            ZStack(alignment: .topLeading) {
-                Color.red.opacity(0.25)
-                    .frame(height: insets.top)
-                    .frame(maxWidth: .infinity)
-
-                Color.green.opacity(0.1)
-                    .padding(.top, insets.top)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("hiddenTitleBar")
-                    Text("Probed: \(insets.top, specifier: "%.1f")pt")
-                    Text("Geometry: \(geometry.safeAreaInsets.top, specifier: "%.1f")pt")
-                }
-                .font(.system(.caption, design: .monospaced))
-                .padding(.top, insets.top + 8)
-                .padding(.leading, 12)
-            }
-        }
-        .ignoresSafeArea()
-    }
-    .previewWindowSize(.fixed(width: 500, height: 300))
-    .previewWindowStyle(.hiddenTitleBar)
+    PreviewWindow { SafeAreaDiagnostic(label: "hiddenTitleBar", insets: PreviewWindowStyle.hiddenTitleBar.safeAreaInsets) }
+        .previewWindowSize(.fixed(width: 500, height: 300))
+        .previewWindowStyle(.hiddenTitleBar)
 }
 
 #Preview("Safe Area Diagnostic - ToolBar") {
-    let insets = PreviewWindowStyle.toolBar.safeAreaInsets
-    PreviewWindow {
-        GeometryReader { geometry in
-            ZStack(alignment: .topLeading) {
-                Color.red.opacity(0.25)
-                    .frame(height: insets.top)
-                    .frame(maxWidth: .infinity)
-
-                Color.green.opacity(0.1)
-                    .padding(.top, insets.top)
-
-                VStack(alignment: .leading, spacing: 4) {
-                    Text("toolBar")
-                    Text("Probed: \(insets.top, specifier: "%.1f")pt")
-                    Text("Geometry: \(geometry.safeAreaInsets.top, specifier: "%.1f")pt")
-                }
-                .font(.system(.caption, design: .monospaced))
-                .padding(.top, insets.top + 8)
-                .padding(.leading, 12)
-            }
-        }
-        .ignoresSafeArea()
-    }
-    .previewWindowSize(.fixed(width: 500, height: 300))
-    .previewWindowStyle(.toolBar)
+    PreviewWindow { SafeAreaDiagnostic(label: "toolBar", insets: PreviewWindowStyle.toolBar.safeAreaInsets) }
+        .previewWindowSize(.fixed(width: 500, height: 300))
+        .previewWindowStyle(.toolBar)
 }
 
 #endif
