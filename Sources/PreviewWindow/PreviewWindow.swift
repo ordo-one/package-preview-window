@@ -111,15 +111,24 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         case titleBar, hiddenTitleBar, toolBar
     }
 
+    private enum WallpaperOption: Hashable {
+        case oceanDark, oceanLight
+        case sunsetDark, sunsetLight
+        case meadowDark, meadowLight
+        case solidDark, solidLight
+        case highContrast
+    }
+
     private let content: Content
     private let wallpaper: Wallpaper
     private var windowSize: PreviewWindowSize = .contentSize
     @State private var windowStyleOption: WindowStyleOption = .titleBar
     private var showTrafficLights: Bool = true
+    private var showWallpaperControls: Bool = true
     private var windowTitle: String = "Preview Window"
     @State private var backgroundOption: BackgroundOption = .defaultStyle
-    @State private var wallpaperStyle: PreviewWallpaper.Style = .ocean
-    @State private var wallpaperAppearance: ColorScheme?
+    @State private var wallpaperOption: WallpaperOption = .oceanDark
+    @State private var colorSchemeOverride: ColorScheme?
     @State private var windowPosition: CGSize = .zero
     @State private var dragStartPosition: CGSize?
 
@@ -128,6 +137,24 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         case .titleBar: .titleBar
         case .hiddenTitleBar: .hiddenTitleBar
         case .toolBar: .toolBar
+        }
+    }
+
+    private var wallpaperStyle: PreviewWallpaper.Style {
+        switch wallpaperOption {
+        case .oceanDark, .oceanLight: .ocean
+        case .sunsetDark, .sunsetLight: .sunset
+        case .meadowDark, .meadowLight: .meadow
+        case .solidDark, .solidLight: .solid
+        case .highContrast: .highContrast
+        }
+    }
+
+    private var wallpaperAppearance: ColorScheme? {
+        switch wallpaperOption {
+        case .oceanDark, .sunsetDark, .meadowDark, .solidDark: .dark
+        case .oceanLight, .sunsetLight, .meadowLight, .solidLight: .light
+        case .highContrast: nil
         }
     }
 
@@ -224,11 +251,36 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         return copy
     }
 
-    /// Sets the default wallpaper style and optionally locks it to a specific appearance.
-    public func previewWallpaper(_ style: PreviewWallpaper.Style, appearance: ColorScheme? = nil) -> Self {
+    /// Shows or hides the interactive wallpaper control bar overlay.
+    public func previewWallpaperControls(_ visible: Bool) -> Self {
         var copy = self
-        copy._wallpaperStyle = State(initialValue: style)
-        copy._wallpaperAppearance = State(initialValue: appearance)
+        copy.showWallpaperControls = visible
+        return copy
+    }
+
+    /// Sets the default wallpaper style and appearance variant.
+    public func previewWallpaper(_ style: PreviewWallpaper.Style, appearance: ColorScheme = .dark) -> Self {
+        var copy = self
+        let option: WallpaperOption
+        switch (style, appearance) {
+        case (.ocean, .light): option = .oceanLight
+        case (.ocean, _): option = .oceanDark
+        case (.sunset, .light): option = .sunsetLight
+        case (.sunset, _): option = .sunsetDark
+        case (.meadow, .light): option = .meadowLight
+        case (.meadow, _): option = .meadowDark
+        case (.solid, .light): option = .solidLight
+        case (.solid, _): option = .solidDark
+        case (.highContrast, _): option = .highContrast
+        }
+        copy._wallpaperOption = State(initialValue: option)
+        return copy
+    }
+
+    /// Overrides the color scheme for the simulated window content.
+    public func previewColorScheme(_ scheme: ColorScheme?) -> Self {
+        var copy = self
+        copy._colorSchemeOverride = State(initialValue: scheme)
         return copy
     }
 
@@ -237,6 +289,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     public var body: some View {
         // Simulated window
         windowContent
+            .colorSchemeOverride(colorSchemeOverride)
             .fixedSize()
             .containerShape(windowShape)
             .clipShape(windowShape)
@@ -255,7 +308,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
             .offset(x: windowPosition.width, y: windowPosition.height)
             .padding(wallpaperPadding)
             .overlay(alignment: .bottom) {
-                if Wallpaper.self == EmptyView.self {
+                if showWallpaperControls, Wallpaper.self == EmptyView.self {
                     wallpaperControls
                         .padding(.horizontal, 12)
                         .padding(.vertical, 8)
@@ -275,12 +328,20 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
 
     private var wallpaperControls: some View {
         HStack(alignment: .center, spacing: 16) {
-            Picker("Wallpaper", systemImage: "photo.fill", selection: $wallpaperStyle) {
-                Text("Ocean").tag(PreviewWallpaper.Style.ocean)
-                Text("Sunset").tag(PreviewWallpaper.Style.sunset)
-                Text("Meadow").tag(PreviewWallpaper.Style.meadow)
-                Text("Solid").tag(PreviewWallpaper.Style.solid)
-                Text("Contrast").tag(PreviewWallpaper.Style.highContrast)
+            Picker("Wallpaper", systemImage: "photo.fill", selection: $wallpaperOption) {
+                Text("Ocean-Dark").tag(WallpaperOption.oceanDark)
+                Text("Ocean-Light").tag(WallpaperOption.oceanLight)
+                Divider()
+                Text("Sunset-Dark").tag(WallpaperOption.sunsetDark)
+                Text("Sunset-Light").tag(WallpaperOption.sunsetLight)
+                Divider()
+                Text("Meadow-Dark").tag(WallpaperOption.meadowDark)
+                Text("Meadow-Light").tag(WallpaperOption.meadowLight)
+                Divider()
+                Text("Solid-Dark").tag(WallpaperOption.solidDark)
+                Text("Solid-Light").tag(WallpaperOption.solidLight)
+                Divider()
+                Text("Contrast").tag(WallpaperOption.highContrast)
             }
 
             Picker("Background", systemImage: "rectangle.on.rectangle", selection: $backgroundOption) {
@@ -304,7 +365,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
                 Text("Toolbar").tag(WindowStyleOption.toolBar)
             }
 
-            Picker("Appearance", systemImage: "circle.lefthalf.filled", selection: $wallpaperAppearance) {
+            Picker("Appearance", systemImage: "circle.lefthalf.filled", selection: $colorSchemeOverride) {
                 Text("Auto").tag(ColorScheme?.none)
                 Text("Light").tag(ColorScheme?.some(.light))
                 Text("Dark").tag(ColorScheme?.some(.dark))
@@ -414,6 +475,15 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
 }
 
 private extension View {
+    @ViewBuilder
+    func colorSchemeOverride(_ scheme: ColorScheme?) -> some View {
+        if let scheme {
+            self.environment(\.colorScheme, scheme)
+        } else {
+            self
+        }
+    }
+
     @ViewBuilder
     func windowFrame(_ size: PreviewWindowSize) -> some View {
         switch size {
