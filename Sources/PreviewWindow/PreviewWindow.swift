@@ -111,7 +111,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         case titleBar, hiddenTitleBar, toolBar
     }
 
-    private enum WallpaperOption: Hashable {
+    private enum WallpaperOption: Hashable, CaseIterable {
         case oceanDark, oceanLight
         case sunsetDark, sunsetLight
         case meadowDark, meadowLight
@@ -157,6 +157,13 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         case .oceanLight, .sunsetLight, .meadowLight, .solidLight: .light
         case .highContrast: nil
         }
+    }
+
+    private func stepWallpaper(by offset: Int) {
+        let cases = WallpaperOption.allCases
+        guard let currentIndex = cases.firstIndex(of: wallpaperOption) else { return }
+        let newIndex = (currentIndex + offset + cases.count) % cases.count
+        wallpaperOption = cases[newIndex]
     }
 
     private var backgroundStyle: BackgroundStyle {
@@ -329,20 +336,31 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
 
     private var wallpaperControls: some View {
         HStack(alignment: .center, spacing: 16) {
-            Picker("Wallpaper", systemImage: "photo.fill", selection: $wallpaperOption) {
-                Text("Ocean-Dark").tag(WallpaperOption.oceanDark)
-                Text("Ocean-Light").tag(WallpaperOption.oceanLight)
-                Divider()
-                Text("Sunset-Dark").tag(WallpaperOption.sunsetDark)
-                Text("Sunset-Light").tag(WallpaperOption.sunsetLight)
-                Divider()
-                Text("Meadow-Dark").tag(WallpaperOption.meadowDark)
-                Text("Meadow-Light").tag(WallpaperOption.meadowLight)
-                Divider()
-                Text("Solid-Dark").tag(WallpaperOption.solidDark)
-                Text("Solid-Light").tag(WallpaperOption.solidLight)
-                Divider()
-                Text("Contrast").tag(WallpaperOption.highContrast)
+            HStack(spacing: 8) {
+                Picker("Wallpaper", systemImage: "photo.fill", selection: $wallpaperOption) {
+                    Text("Ocean-Dark").tag(WallpaperOption.oceanDark)
+                    Text("Ocean-Light").tag(WallpaperOption.oceanLight)
+                    Divider()
+                    Text("Sunset-Dark").tag(WallpaperOption.sunsetDark)
+                    Text("Sunset-Light").tag(WallpaperOption.sunsetLight)
+                    Divider()
+                    Text("Meadow-Dark").tag(WallpaperOption.meadowDark)
+                    Text("Meadow-Light").tag(WallpaperOption.meadowLight)
+                    Divider()
+                    Text("Solid-Dark").tag(WallpaperOption.solidDark)
+                    Text("Solid-Light").tag(WallpaperOption.solidLight)
+                    Divider()
+                    Text("Contrast").tag(WallpaperOption.highContrast)
+                }
+
+                Stepper("Wallpaper") {
+                    stepWallpaper(by: 1)
+                } onDecrement: {
+                    stepWallpaper(by: -1)
+                }
+                .labelsHidden()
+                .controlSize(.small)
+                .rotationEffect(.degrees(90))
             }
 
             Picker("Background", systemImage: "rectangle.on.rectangle", selection: $backgroundOption) {
