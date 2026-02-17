@@ -129,6 +129,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     @State private var backgroundOption: BackgroundOption = .defaultStyle
     @State private var wallpaperOption: WallpaperOption = .oceanDark
     @State private var colorSchemeOverride: ColorScheme?
+    @Environment(\.colorScheme) private var environmentColorScheme
     @State private var windowPosition: CGSize = .zero
     @State private var dragStartPosition: CGSize?
 
@@ -289,7 +290,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     public var body: some View {
         // Simulated window
         windowContent
-            .colorSchemeOverride(colorSchemeOverride)
+            .environment(\.colorScheme, colorSchemeOverride ?? environmentColorScheme)
             .fixedSize()
             .containerShape(windowShape)
             .clipShape(windowShape)
@@ -380,28 +381,32 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     }
 
     private var windowContent: some View {
-        framedContent
-            .safeAreaInset(edge: .top, spacing: 0) {
-                if showsTitleBar {
-                    titleBar
-                        .gesture(windowDragGesture)
-                } else {
-                    // Hidden title bar: transparent drag handle in safe area
-                    Color.clear
-                        .frame(maxWidth: .infinity)
-                        .frame(height: windowStyle.safeAreaInsets.top)
-                        .contentShape(.rect)
-                        .overlay(alignment: .leading) {
-                            if showTrafficLights {
-                                TrafficLights()
-                                    .padding(.leading, 13)
-                            }
+        ZStack(alignment: .top) {
+            framedContent
+                .safeAreaPadding(windowStyle.safeAreaInsets)
+                .windowBackground(style: backgroundStyle)
+                .layoutPriority(2)
+
+            if showsTitleBar {
+                titleBar
+                    .gesture(windowDragGesture)
+                    .layoutPriority(1)
+            } else {
+                // Hidden title bar: transparent drag handle in safe area
+                Color.clear
+                    .frame(maxWidth: .infinity)
+                    .frame(height: windowStyle.safeAreaInsets.top)
+                    .contentShape(.rect)
+                    .overlay(alignment: .leading) {
+                        if showTrafficLights {
+                            TrafficLights()
+                                .padding(.leading, 13)
                         }
-                        .gesture(windowDragGesture)
-                }
+                    }
+                    .gesture(windowDragGesture)
             }
-            .windowBackground(style: backgroundStyle)
-            .windowFrame(windowSize)
+        }
+        .windowFrame(windowSize)
     }
 
     private var showsTitleBar: Bool {
@@ -411,9 +416,10 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     private var windowDragGesture: some Gesture {
         DragGesture(coordinateSpace: .global)
             .onChanged { value in
-                if dragStartPosition == nil { dragStartPosition = windowPosition }
-                windowPosition = CGSize(width: dragStartPosition!.width + value.translation.width,
-                                        height: dragStartPosition!.height + value.translation.height)
+                let start = dragStartPosition ?? windowPosition
+                dragStartPosition = start
+                windowPosition = CGSize(width: start.width + value.translation.width,
+                                        height: start.height + value.translation.height)
             }
             .onEnded { _ in
                 dragStartPosition = nil
@@ -475,15 +481,6 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
 }
 
 private extension View {
-    @ViewBuilder
-    func colorSchemeOverride(_ scheme: ColorScheme?) -> some View {
-        if let scheme {
-            self.environment(\.colorScheme, scheme)
-        } else {
-            self
-        }
-    }
-
     @ViewBuilder
     func windowFrame(_ size: PreviewWindowSize) -> some View {
         switch size {
