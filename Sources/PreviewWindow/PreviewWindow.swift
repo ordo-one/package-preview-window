@@ -87,10 +87,10 @@ public enum PreviewWindowStyle: Sendable {
 ///     .previewWindowTitle("My App")
 ///     .previewWindowBackground(.glass(.regular))
 ///     .previewWallpaper(.sunset, appearance: .dark)
+///     .previewWindowPadding(100)
 /// }
 /// ```
 public struct PreviewWindow<Content: View, Wallpaper: View>: View {
-
     /// The background style applied to the simulated window content area.
     public enum BackgroundStyle {
         /// System default background.
@@ -217,6 +217,13 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         return copy
     }
 
+    /// Sets the padding between the wallpaper edge and the simulated window.
+    public func previewWindowPadding(_ padding: CGFloat) -> Self {
+        var copy = self
+        copy.wallpaperPadding = padding
+        return copy
+    }
+
     /// Sets the default wallpaper style and optionally locks it to a specific appearance.
     public func previewWallpaper(_ style: PreviewWallpaper.Style, appearance: ColorScheme? = nil) -> Self {
         var copy = self
@@ -225,7 +232,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         return copy
     }
 
-    private let wallpaperPadding: CGFloat = 200
+    private var wallpaperPadding: CGFloat = 200
 
     public var body: some View {
         // Simulated window
@@ -233,12 +240,12 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
             .fixedSize()
             .containerShape(windowShape)
             .clipShape(windowShape)
-        // Inner white border (highlight)
+            // Inner white border (highlight)
             .overlay {
                 windowShape
                     .strokeBorder(Color.white.opacity(0.2), lineWidth: 0.5)
             }
-        // Outer black border (definition)
+            // Outer black border (definition)
             .overlay {
                 windowShape
                     .strokeBorder(Color.black.opacity(0.2), lineWidth: 0.5)
@@ -312,44 +319,40 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     }
 
     private var windowContent: some View {
-        ZStack(alignment: .top) {
-            framedContent
-                .safeAreaPadding(windowStyle.safeAreaInsets)
-                .windowBackground(style: backgroundStyle)
-                .layoutPriority(2)
-
-            if showsTitleBar {
-                titleBar
-                    .gesture(windowDragGesture)
-                    .layoutPriority(1)
-            } else {
-                // Hidden title bar: transparent drag handle in safe area
-                Color.clear
-                    .frame(maxWidth: .infinity)
-                    .frame(height: windowStyle.safeAreaInsets.top)
-                    .contentShape(.rect)
-                    .overlay(alignment: .leading) {
-                        if showTrafficLights {
-                            TrafficLights()
-                                .padding(.leading, 13)
+        framedContent
+            .safeAreaInset(edge: .top, spacing: 0) {
+                if showsTitleBar {
+                    titleBar
+                        .gesture(windowDragGesture)
+                } else {
+                    // Hidden title bar: transparent drag handle in safe area
+                    Color.clear
+                        .frame(maxWidth: .infinity)
+                        .frame(height: windowStyle.safeAreaInsets.top)
+                        .contentShape(.rect)
+                        .overlay(alignment: .leading) {
+                            if showTrafficLights {
+                                TrafficLights()
+                                    .padding(.leading, 13)
+                            }
                         }
-                    }
-                    .gesture(windowDragGesture)
+                        .gesture(windowDragGesture)
+                }
             }
-        }
-        .windowFrame(windowSize)
+            .windowBackground(style: backgroundStyle)
+            .windowFrame(windowSize)
     }
 
-    private var showsTitleBar: Bool { windowStyleOption != .hiddenTitleBar }
+    private var showsTitleBar: Bool {
+        windowStyleOption != .hiddenTitleBar
+    }
 
     private var windowDragGesture: some Gesture {
         DragGesture(coordinateSpace: .global)
             .onChanged { value in
                 if dragStartPosition == nil { dragStartPosition = windowPosition }
-                windowPosition = CGSize(
-                    width: dragStartPosition!.width + value.translation.width,
-                    height: dragStartPosition!.height + value.translation.height
-                )
+                windowPosition = CGSize(width: dragStartPosition!.width + value.translation.width,
+                                        height: dragStartPosition!.height + value.translation.height)
             }
             .onEnded { _ in
                 dragStartPosition = nil
@@ -405,10 +408,8 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
 
     private func clampedPosition(_ position: CGSize) -> CGSize {
         let bound = wallpaperPadding - windowStyle.safeAreaInsets.top
-        return CGSize(
-            width: min(max(position.width, -bound), bound),
-            height: min(max(position.height, -bound), bound)
-        )
+        return CGSize(width: min(max(position.width, -bound), bound),
+                      height: min(max(position.height, -bound), bound))
     }
 }
 
@@ -651,6 +652,7 @@ private struct SafeAreaDiagnostic: View {
     PreviewWindow { SafeAreaDiagnostic(label: "toolBar", insets: PreviewWindowStyle.toolBar.safeAreaInsets) }
         .previewWindowSize(.fixed(width: 500, height: 300))
         .previewWindowStyle(.toolBar)
+        .previewWindowPadding(100)
 }
 
 #endif
