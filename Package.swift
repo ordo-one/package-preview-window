@@ -6,6 +6,7 @@ let package = Package(
     name: "package-preview-window",
     platforms: [
         .macOS(.v26),
+        .iOS(.v26),
     ],
     products: [
         .library(

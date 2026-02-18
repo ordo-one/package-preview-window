@@ -1,3 +1,4 @@
+#if os(macOS)
 import AppKit
 import SwiftUI
 
@@ -740,4 +741,6 @@ private struct SafeAreaDiagnostic: View {
         .previewWindowPadding(100)
 }
 
-#endif
+#endif // DEBUG
+
+#endif // os(macOS)
