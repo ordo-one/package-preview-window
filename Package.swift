@@ -10,13 +10,13 @@ let package = Package(
     ],
     products: [
         .library(
-            name: "PreviewWindow",
-            targets: ["PreviewWindow"]
+            name: "PreviewWindowChrome",
+            targets: ["PreviewWindowChrome"]
         ),
     ],
     targets: [
         .target(
-            name: "PreviewWindow"
+            name: "PreviewWindowChrome"
         ),
     ]
 )
