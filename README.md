@@ -23,12 +23,16 @@ dependencies: [
 ]
 ```
 
-Then add `"PreviewWindow"` to your target's dependencies.
+Then add `"PreviewWindowChrome"` to your target's dependencies.
+
+## AI Coding Assistant Skill
+
+If you use an AI coding assistant (Claude Code, Cursor, Copilot, etc.), load [`SKILLS.md`](SKILLS.md) as context so it knows the full PreviewWindow API when writing or modifying previews.
 
 ## Usage
 
 ```swift
-import PreviewWindow
+import PreviewWindowChrome
 
 #Preview {
     PreviewWindow {
@@ -78,7 +82,7 @@ PreviewWindow { ... }
 
 // Material background
 PreviewWindow { ... }
-    .previewWindowBackground(.material(.thickMaterial))
+    .previewWindowBackground(.material(.thick))
 
 // Glass background
 PreviewWindow { ... }
@@ -86,7 +90,7 @@ PreviewWindow { ... }
 
 // Clear (no background)
 PreviewWindow { ... }
-    .previewWindowBackground(.material(nil))
+    .previewWindowBackground(.clear)
 ```
 
 ### Other Options

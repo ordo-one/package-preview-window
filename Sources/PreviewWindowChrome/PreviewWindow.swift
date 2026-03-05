@@ -2,74 +2,6 @@
 import AppKit
 import SwiftUI
 
-/// Window size options for PreviewWindow.
-public enum PreviewWindowSize: Sendable {
-    /// Fixed window size with specific dimensions.
-    case fixed(width: CGFloat, height: CGFloat)
-    /// Window size to fit its content.
-    case contentSize
-}
-
-/// Window style presets based on macOS Tahoe design specifications.
-public enum PreviewWindowStyle: Sendable {
-    /// TitleBar-style window with 16pt corner radius.
-    case titleBar
-    /// Hidden title bar window with 16pt corner radius. Content extends behind the transparent title bar.
-    case hiddenTitleBar
-    /// Toolbar-style window (like Safari) with 26pt corner radius.
-    case toolBar
-    /// Custom corner radius.
-    case custom(CGFloat)
-
-    var cornerRadius: CGFloat {
-        switch self {
-        case .titleBar, .hiddenTitleBar: 16
-        case .toolBar: 26
-        case .custom(let radius): radius
-        }
-    }
-
-    /// Safe area insets matching the window chrome for this style, measured from the system.
-    @MainActor var safeAreaInsets: EdgeInsets {
-        switch self {
-        case .titleBar, .custom: Self.titleBarInsets
-        case .hiddenTitleBar: Self.hiddenTitleBarInsets
-        case .toolBar: Self.toolBarInsets
-        }
-    }
-
-    @MainActor private static let titleBarInsets: EdgeInsets = {
-        let frame = NSRect(x: 0, y: 0, width: 480, height: 300)
-        let contentRect = NSWindow.contentRect(forFrameRect: frame,
-                                               styleMask: [.titled, .closable, .miniaturizable, .resizable])
-        return EdgeInsets(top: frame.height - contentRect.height, leading: 0, bottom: 0, trailing: 0)
-    }()
-
-    @MainActor private static let hiddenTitleBarInsets: EdgeInsets = {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
-                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-                              backing: .buffered,
-                              defer: true)
-        window.titleVisibility = .hidden
-        window.titlebarAppearsTransparent = true
-        let topInset = window.frame.height - window.contentLayoutRect.height
-        return EdgeInsets(top: topInset, leading: 0, bottom: 0, trailing: 0)
-    }()
-
-    @MainActor private static let toolBarInsets: EdgeInsets = {
-        let window = NSWindow(contentRect: NSRect(x: 0, y: 0, width: 480, height: 300),
-                              styleMask: [.titled, .closable, .miniaturizable, .resizable, .fullSizeContentView],
-                              backing: .buffered,
-                              defer: true)
-        let toolbar = NSToolbar(identifier: "PreviewWindow.measure")
-        toolbar.displayMode = .iconOnly
-        window.toolbar = toolbar
-        window.toolbarStyle = .unified
-        let topInset = window.frame.height - window.contentLayoutRect.height
-        return EdgeInsets(top: topInset, leading: 0, bottom: 0, trailing: 0)
-    }()
-}
-
 /// A preview wrapper that simulates macOS window chrome for views with transparency.
 ///
 /// Use this to preview views that rely on window styling like `.containerBackground(.thinMaterial, for: .window)`
@@ -92,16 +24,6 @@ public enum PreviewWindowStyle: Sendable {
 /// }
 /// ```
 public struct PreviewWindow<Content: View, Wallpaper: View>: View {
-    /// The background style applied to the simulated window content area.
-    public enum BackgroundStyle {
-        /// System default background.
-        case defaultStyle
-        /// A material blur background. Pass `nil` for a clear background.
-        case material(Material?)
-        /// A Liquid Glass background.
-        case glass(Glass)
-    }
-
     private enum BackgroundOption: Hashable {
         case defaultStyle, clear
         case ultraThinMaterial, thinMaterial, regularMaterial, thickMaterial, ultraThickMaterial, barMaterial
@@ -167,15 +89,15 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         wallpaperOption = cases[newIndex]
     }
 
-    private var backgroundStyle: BackgroundStyle {
+    private var backgroundStyle: PreviewWindowBackground {
         switch backgroundOption {
         case .defaultStyle: .defaultStyle
-        case .clear: .material(nil)
-        case .ultraThinMaterial: .material(.ultraThinMaterial)
-        case .thinMaterial: .material(.thinMaterial)
-        case .regularMaterial: .material(.regularMaterial)
-        case .thickMaterial: .material(.thickMaterial)
-        case .ultraThickMaterial: .material(.ultraThickMaterial)
+        case .clear: .clear
+        case .ultraThinMaterial: .material(.ultraThin)
+        case .thinMaterial: .material(.thin)
+        case .regularMaterial: .material(.regular)
+        case .thickMaterial: .material(.thick)
+        case .ultraThickMaterial: .material(.ultraThick)
         case .barMaterial: .material(.bar)
         case .glassClear: .glass(.clear)
         case .glassRegular: .glass(.regular)
@@ -225,15 +147,20 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     ///
     /// When using the default wallpaper, the background style can be changed
     /// interactively through the control bar overlay.
-    public func previewWindowBackground(_ style: BackgroundStyle) -> Self {
+    public func previewWindowBackground(_ style: PreviewWindowBackground) -> Self {
         var copy = self
         let option: BackgroundOption
         switch style {
         case .defaultStyle: option = .defaultStyle
-        case .material(.none): option = .clear
-        // Material/Glass aren't Equatable, so specific variants can't be matched.
-        case .material: option = .regularMaterial
-        case .glass: option = .glassRegular
+        case .clear: option = .clear
+        case .material(.ultraThin): option = .ultraThinMaterial
+        case .material(.thin): option = .thinMaterial
+        case .material(.regular): option = .regularMaterial
+        case .material(.thick): option = .thickMaterial
+        case .material(.ultraThick): option = .ultraThickMaterial
+        case .material(.bar): option = .barMaterial
+        case .glass(.clear): option = .glassClear
+        case .glass(.regular): option = .glassRegular
         }
         copy._backgroundOption = State(initialValue: option)
         return copy
@@ -509,18 +436,16 @@ private extension View {
     }
 
     @ViewBuilder
-    func windowBackground<Content: View, Wallpaper: View>(style: PreviewWindow<Content, Wallpaper>.BackgroundStyle) -> some View {
+    func windowBackground(style: PreviewWindowBackground) -> some View {
         switch style {
         case .defaultStyle:
             self.background()
-        case .material(let material):
-            if let material {
-                self.background(material)
-            } else {
-                self.background(.clear)
-            }
-        case .glass(let glass):
-            self.glassEffect(glass, in: .containerRelative)
+        case .clear:
+            self.background(.clear)
+        case .material(let variant):
+            self.background(variant.material)
+        case .glass(let variant):
+            self.glassEffect(variant.glass, in: .containerRelative)
         }
     }
 }

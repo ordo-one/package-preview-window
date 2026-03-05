@@ -60,7 +60,7 @@ PreviewWindow { ... }
 
 // Material background
 PreviewWindow { ... }
-    .previewWindowBackground(.material(.thickMaterial))
+    .previewWindowBackground(.material(.thick))
 
 // Glass background
 PreviewWindow { ... }
@@ -68,7 +68,7 @@ PreviewWindow { ... }
 
 // Clear (no background)
 PreviewWindow { ... }
-    .previewWindowBackground(.material(nil))
+    .previewWindowBackground(.clear)
 ```
 
 ### Title and Wallpaper
@@ -86,4 +86,5 @@ PreviewWindow { ... }
 - ``PreviewWindow``
 - ``PreviewWindowSize``
 - ``PreviewWindowStyle``
+- ``PreviewWindowBackground``
 - ``PreviewWallpaper``
