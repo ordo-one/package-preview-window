@@ -24,16 +24,6 @@ import SwiftUI
 /// }
 /// ```
 public struct PreviewWindow<Content: View, Wallpaper: View>: View {
-    private enum BackgroundOption: Hashable {
-        case defaultStyle, clear
-        case ultraThinMaterial, thinMaterial, regularMaterial, thickMaterial, ultraThickMaterial, barMaterial
-        case glassClear, glassRegular
-    }
-
-    private enum WindowStyleOption: Hashable {
-        case titleBar, hiddenTitleBar, toolBar
-    }
-
     private enum WallpaperOption: Hashable, CaseIterable {
         case oceanDark, oceanLight
         case sunsetDark, sunsetLight
@@ -45,23 +35,19 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     private let content: Content
     private let wallpaper: Wallpaper
     private var windowSize: PreviewWindowSize = .contentSize
-    @State private var windowStyleOption: WindowStyleOption = .titleBar
+    @State private var windowStyle: PreviewWindowStyle = .titleBar
     private var showTrafficLights: Bool = true
     private var showWallpaperControls: Bool = true
     private var windowTitle: String = "Preview Window"
-    @State private var backgroundOption: BackgroundOption = .defaultStyle
+    @State private var backgroundOption: PreviewWindowBackground = .defaultStyle
     @State private var wallpaperOption: WallpaperOption = .oceanDark
     @State private var colorSchemeOverride: ColorScheme?
     @Environment(\.colorScheme) private var environmentColorScheme
     @State private var windowPosition: CGSize = .zero
     @State private var dragStartPosition: CGSize?
 
-    private var windowStyle: PreviewWindowStyle {
-        switch windowStyleOption {
-        case .titleBar: .titleBar
-        case .hiddenTitleBar: .hiddenTitleBar
-        case .toolBar: .toolBar
-        }
+    private var backgroundStyle: PreviewWindowBackground {
+        backgroundOption
     }
 
     private var wallpaperStyle: PreviewWallpaper.Style {
@@ -89,18 +75,17 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         wallpaperOption = cases[newIndex]
     }
 
-    private var backgroundStyle: PreviewWindowBackground {
-        switch backgroundOption {
-        case .defaultStyle: .defaultStyle
-        case .clear: .clear
-        case .ultraThinMaterial: .material(.ultraThin)
-        case .thinMaterial: .material(.thin)
-        case .regularMaterial: .material(.regular)
-        case .thickMaterial: .material(.thick)
-        case .ultraThickMaterial: .material(.ultraThick)
-        case .barMaterial: .material(.bar)
-        case .glassClear: .glass(.clear)
-        case .glassRegular: .glass(.regular)
+    private static func wallpaperOption(for style: PreviewWallpaper.Style, appearance: ColorScheme) -> WallpaperOption {
+        switch (style, appearance) {
+        case (.ocean, .light): .oceanLight
+        case (.ocean, _): .oceanDark
+        case (.sunset, .light): .sunsetLight
+        case (.sunset, _): .sunsetDark
+        case (.meadow, .light): .meadowLight
+        case (.meadow, _): .meadowDark
+        case (.solid, .light): .solidLight
+        case (.solid, _): .solidDark
+        case (.highContrast, _): .highContrast
         }
     }
 
@@ -132,14 +117,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     /// interactively through the control bar overlay.
     public func previewWindowStyle(_ style: PreviewWindowStyle) -> Self {
         var copy = self
-        let option: WindowStyleOption
-        switch style {
-        case .titleBar: option = .titleBar
-        case .hiddenTitleBar: option = .hiddenTitleBar
-        case .toolBar: option = .toolBar
-        case .custom: option = .titleBar
-        }
-        copy._windowStyleOption = State(initialValue: option)
+        copy._windowStyle = State(initialValue: style)
         return copy
     }
 
@@ -149,20 +127,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     /// interactively through the control bar overlay.
     public func previewWindowBackground(_ style: PreviewWindowBackground) -> Self {
         var copy = self
-        let option: BackgroundOption
-        switch style {
-        case .defaultStyle: option = .defaultStyle
-        case .clear: option = .clear
-        case .material(.ultraThin): option = .ultraThinMaterial
-        case .material(.thin): option = .thinMaterial
-        case .material(.regular): option = .regularMaterial
-        case .material(.thick): option = .thickMaterial
-        case .material(.ultraThick): option = .ultraThickMaterial
-        case .material(.bar): option = .barMaterial
-        case .glass(.clear): option = .glassClear
-        case .glass(.regular): option = .glassRegular
-        }
-        copy._backgroundOption = State(initialValue: option)
+        copy._backgroundOption = State(initialValue: style)
         return copy
     }
 
@@ -197,19 +162,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     /// Sets the default wallpaper style and appearance variant.
     public func previewWallpaper(_ style: PreviewWallpaper.Style, appearance: ColorScheme = .dark) -> Self {
         var copy = self
-        let option: WallpaperOption
-        switch (style, appearance) {
-        case (.ocean, .light): option = .oceanLight
-        case (.ocean, _): option = .oceanDark
-        case (.sunset, .light): option = .sunsetLight
-        case (.sunset, _): option = .sunsetDark
-        case (.meadow, .light): option = .meadowLight
-        case (.meadow, _): option = .meadowDark
-        case (.solid, .light): option = .solidLight
-        case (.solid, _): option = .solidDark
-        case (.highContrast, _): option = .highContrast
-        }
-        copy._wallpaperOption = State(initialValue: option)
+        copy._wallpaperOption = State(initialValue: Self.wallpaperOption(for: style, appearance: appearance))
         return copy
     }
 
@@ -292,24 +245,24 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
             }
 
             Picker("Background", systemImage: "rectangle.on.rectangle", selection: $backgroundOption) {
-                Text("Default").tag(BackgroundOption.defaultStyle)
-                Text("Clear").tag(BackgroundOption.clear)
+                Text("Default").tag(PreviewWindowBackground.defaultStyle)
+                Text("Clear").tag(PreviewWindowBackground.clear)
                 Divider()
-                Text("Ultra Thin").tag(BackgroundOption.ultraThinMaterial)
-                Text("Thin").tag(BackgroundOption.thinMaterial)
-                Text("Regular").tag(BackgroundOption.regularMaterial)
-                Text("Thick").tag(BackgroundOption.thickMaterial)
-                Text("Ultra Thick").tag(BackgroundOption.ultraThickMaterial)
-                Text("Bar").tag(BackgroundOption.barMaterial)
+                Text("Ultra Thin").tag(PreviewWindowBackground.material(.ultraThin))
+                Text("Thin").tag(PreviewWindowBackground.material(.thin))
+                Text("Regular").tag(PreviewWindowBackground.material(.regular))
+                Text("Thick").tag(PreviewWindowBackground.material(.thick))
+                Text("Ultra Thick").tag(PreviewWindowBackground.material(.ultraThick))
+                Text("Bar").tag(PreviewWindowBackground.material(.bar))
                 Divider()
-                Text("Glass Clear").tag(BackgroundOption.glassClear)
-                Text("Glass Regular").tag(BackgroundOption.glassRegular)
+                Text("Glass Clear").tag(PreviewWindowBackground.glass(.clear))
+                Text("Glass Regular").tag(PreviewWindowBackground.glass(.regular))
             }
 
-            Picker("Window Style", systemImage: "macwindow", selection: $windowStyleOption) {
-                Text("Title Bar").tag(WindowStyleOption.titleBar)
-                Text("Hidden Title Bar").tag(WindowStyleOption.hiddenTitleBar)
-                Text("Toolbar").tag(WindowStyleOption.toolBar)
+            Picker("Window Style", systemImage: "macwindow", selection: $windowStyle) {
+                Text("Title Bar").tag(PreviewWindowStyle.titleBar)
+                Text("Hidden Title Bar").tag(PreviewWindowStyle.hiddenTitleBar)
+                Text("Toolbar").tag(PreviewWindowStyle.toolBar)
             }
 
             Picker("Appearance", systemImage: "circle.lefthalf.filled", selection: $colorSchemeOverride) {
@@ -356,7 +309,7 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
     }
 
     private var showsTitleBar: Bool {
-        windowStyleOption != .hiddenTitleBar
+        windowStyle != .hiddenTitleBar
     }
 
     private var windowDragGesture: some Gesture {
@@ -391,7 +344,11 @@ public struct PreviewWindow<Content: View, Wallpaper: View>: View {
         }
         .padding(.horizontal, 13)
         .frame(height: windowStyle.safeAreaInsets.top)
-        .background(.bar, in: ConcentricRectangle(corners: .concentric))
+        .background {
+            if case .defaultStyle = backgroundStyle {
+                ConcentricRectangle(corners: .concentric).fill(.bar)
+            }
+        }
     }
 
     @ViewBuilder

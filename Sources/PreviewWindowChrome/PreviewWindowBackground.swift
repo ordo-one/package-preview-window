@@ -2,7 +2,7 @@
 import SwiftUI
 
 /// The background style applied to the simulated window content area.
-public enum PreviewWindowBackground {
+public enum PreviewWindowBackground: Hashable {
     /// System default background.
     case defaultStyle
     /// A clear (transparent) background.
@@ -13,7 +13,7 @@ public enum PreviewWindowBackground {
     case glass(GlassVariant)
 
     /// Material blur variants available for the window background.
-    public enum MaterialVariant {
+    public enum MaterialVariant: Hashable {
         case ultraThin, thin, regular, thick, ultraThick, bar
 
         var material: Material {
@@ -29,7 +29,7 @@ public enum PreviewWindowBackground {
     }
 
     /// Liquid Glass variants available for the window background.
-    public enum GlassVariant {
+    public enum GlassVariant: Hashable {
         case clear, regular
 
         var glass: Glass {

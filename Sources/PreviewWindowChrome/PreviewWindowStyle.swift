@@ -3,7 +3,7 @@ import AppKit
 import SwiftUI
 
 /// Window style presets based on macOS Tahoe design specifications.
-public enum PreviewWindowStyle: Sendable {
+public enum PreviewWindowStyle: Sendable, Hashable {
     /// TitleBar-style window with 16pt corner radius.
     case titleBar
     /// Hidden title bar window with 16pt corner radius. Content extends behind the transparent title bar.
