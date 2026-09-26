@@ -9,7 +9,7 @@ Renders a title bar, traffic lights, window border highlights, shadow, and a des
 
 ![Demo](https://github.com/user-attachments/assets/3b7c80ec-12be-4680-9810-1889e1ccb815)
 
-**Requires macOS 26+, Swift 6.2+**
+**Requires macOS 27+, Swift 6.4+**
 
 This package follows [Semantic Versioning](https://semver.org/). While the major version is `0`, the API is not yet considered stable and may change between minor releases.
 

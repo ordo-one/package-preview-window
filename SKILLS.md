@@ -2,7 +2,7 @@
 
 Use this skill when writing or modifying SwiftUI `#Preview` blocks that use the `PreviewWindow` package. This package simulates macOS window chrome (title bar, traffic lights, borders, shadow, wallpaper) so views that depend on window-level styling render correctly in Xcode previews.
 
-**Requires macOS 26+, Swift 6.2+. macOS only.**
+**Requires macOS 27+, Swift 6.4+. macOS only.**
 
 ## Import
 

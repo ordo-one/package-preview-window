@@ -12,6 +12,9 @@ jobs:
     runs-on: macos-26
     steps:
       - uses: actions/checkout@v4
+      # Package needs swift-tools-version 6.4; the image defaults to an older Xcode.
+      - name: Select Xcode 27
+        run: sudo xcode-select -s "$(ls -d /Applications/Xcode_27*.app | sort -V | tail -1)"
       - name: Build
         run: swift build
 
